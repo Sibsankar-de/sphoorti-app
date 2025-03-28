@@ -1,4 +1,4 @@
-import { Alert, BackHandler, StyleSheet, Text, View, ImageBackground } from 'react-native'
+import { Alert, BackHandler, StyleSheet, Text, View, ImageBackground, TextInput, ScrollView } from 'react-native'
 import React, { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'expo-router/build/hooks';
 
@@ -47,6 +47,7 @@ export default function ControlScreen() {
     const [recording, setRecording] = useState<Audio.Recording | null>(null);
     const [isRecording, setIsRecording] = useState(false);
     const [transcription, setTranscription] = useState<string>('');
+    const [textInput, setTextInput] = useState<string>("");
     const [uploading, setUploading] = useState<boolean>(false);
     const [timeoutId, setTimeoutId] = useState<NodeJS.Timeout | null>(null);
 
@@ -122,6 +123,7 @@ export default function ControlScreen() {
         const cloudName = 'denjnvjas';
         const apiKey = '246158419833942';
         const uploadPreset = 'expo-audio';
+        const folder = 'sphoorti-transcriptions';
 
         const formData = new FormData();
         formData.append('file', {
@@ -132,6 +134,7 @@ export default function ControlScreen() {
         formData.append('upload_preset', uploadPreset);
         formData.append('cloud_name', cloudName);
         formData.append('api_key', apiKey);
+        formData.append("folder", folder)
 
         try {
             const response = await axios.post(
@@ -146,8 +149,10 @@ export default function ControlScreen() {
 
             console.log('Upload Successful!', `File URL: ${response.data.secure_url}`);
             // transcripts audio
-            const transcript = await transcribeAudio(response.data.secure_url) || "";
+            let transcript = await transcribeAudio(response.data.secure_url) || "";
+            transcript = transcript.replace(/[^\w\s]/g, " "); // removes symbols from transcription
             setTranscription(transcript);
+            setTextInput(transcript)
             setUploading(false);
 
             if (currentDevice)
@@ -231,6 +236,18 @@ export default function ControlScreen() {
         }
     }
 
+    // handle text input
+    const handleTextSend = async () => {
+        if (textInput.length > 0 && currentDevice) {
+            try {
+                await handleSending(textInput, currentDevice);
+            } catch (error) {
+
+            }
+        }
+
+    }
+
     // convert audio into codes
     const [isSending, setIsSending] = useState(false);
     const [stopSending, setStopSending] = useState(false);
@@ -238,8 +255,8 @@ export default function ControlScreen() {
     // set sending status for sending data
     const [sendingStatus, setSendingStatus] = useState({ completed: "", remaining: "" });
     useEffect(() => {
-        setSendingStatus({ completed: "", remaining: transcription })
-    }, [transcription])
+        setSendingStatus({ completed: "", remaining: transcription || textInput })
+    }, [transcription, textInput])
 
 
     const timePeriod = useRef(5000);
@@ -300,10 +317,10 @@ export default function ControlScreen() {
     const [updatePeriod, setUpdatePeriod] = useState(timePeriod.current);
 
     const handleSendSpeed = (increment = 0) => {
-        if (updatePeriod + increment >= 3000) setUpdatePeriod(updatePeriod+increment);
+        if (updatePeriod + increment >= 3000) setUpdatePeriod(updatePeriod + increment);
     }
 
-    useEffect(()=>{
+    useEffect(() => {
         timePeriod.current = updatePeriod;
     }, [updatePeriod])
 
@@ -315,68 +332,82 @@ export default function ControlScreen() {
                     <Text style={{ color: "#fff", marginBottom: 5, fontSize: 20 }}>{currentDevice?.name || currentDevice?.localName || currentDevice?.manufacturerData}</Text>
                     <Text style={{ color: "#fff" }}>{currentDevice?.id}</Text>
                 </View>
-                <View style={styles.contentBox}>
-                    <View style={{ alignItems: 'center' }}>
-                        <TouchableNativeFeedback onPress={handleRecordButton} disabled={uploading || isSending}>
-                            <View style={styles.micButton}>
-                                <Icon name="microphone-alt" size={100} color="#11a5f6" />
-                                {isRecording &&
-                                    <LottieView source={require("../../assets/lottie/voice-loader.json")} autoPlay loop style={{ width: 100, height: 100, position: "absolute" }} />
-                                }
-                                {uploading && <View style={{ position: 'absolute', alignItems: "center" }} >
-                                    <LottieView source={require("../../assets/lottie/upload-loader.json")} autoPlay loop style={{ width: 100, height: 100 }} />
-                                    <Text style={{ color: "#fff", fontSize: 17 }}>Transcripting...</Text>
-                                </View>}
-                                {isSending &&
-                                    <LottieView source={require("../../assets/lottie/send-loader.json")} duration={4000} autoPlay loop style={{ position: 'absolute', width: 160, height: 160 }} />}
+                <View>
+                    <ScrollView>
+                        <View style={styles.contentBox}>
+                            <View style={{ alignItems: 'center' }}>
+                                <TouchableNativeFeedback onPress={handleRecordButton} disabled={uploading || isSending}>
+                                    <View style={styles.micButton}>
+                                        <Icon name="microphone-alt" size={100} color="#11a5f6" />
+                                        {isRecording &&
+                                            <LottieView source={require("../../assets/lottie/voice-loader.json")} autoPlay loop style={{ width: 100, height: 100, position: "absolute" }} />
+                                        }
+                                        {uploading && <View style={{ position: 'absolute', alignItems: "center" }} >
+                                            <LottieView source={require("../../assets/lottie/upload-loader.json")} autoPlay loop style={{ width: 100, height: 100 }} />
+                                            <Text style={{ color: "#fff", fontSize: 17 }}>Transcripting...</Text>
+                                        </View>}
+                                        {isSending &&
+                                            <LottieView source={require("../../assets/lottie/send-loader.json")} duration={4000} autoPlay loop style={{ position: 'absolute', width: 160, height: 160 }} />}
+                                    </View>
+                                </TouchableNativeFeedback>
+                                <View style={{ marginTop: 10 }}>
+                                    {isRecording && <Text style={{ color: "#d4d4c9", marginBottom: 5 }}>Audio recording...</Text>}
+                                    {(!uploading && !isSending) && <Text style={{ color: "#d4d4c9" }}>Tap to {isRecording ? "stop recording" : "record audio"}</Text>}
+                                </View>
                             </View>
-                        </TouchableNativeFeedback>
-                        <View style={{ marginTop: 10 }}>
-                            {isRecording && <Text style={{ color: "#d4d4c9", marginBottom: 5 }}>Audio recording...</Text>}
-                            {(!uploading && !isSending) && <Text style={{ color: "#d4d4c9" }}>Tap to {isRecording ? "stop recording" : "record audio"}</Text>}
-                        </View>
-                    </View>
-                    {<View style={styles.transCriptionBox}>
-                        <View style={{ marginBottom: 2, flexDirection: "row", alignItems: "center", gap: 10 }}>
-                            <Text style={{ color: "#fff", fontSize: 18 }}>{uploading ? "Transcripting..." : "Transcription"}</Text>
-                            {isSending && <Text style={{ fontSize: 11, color: "rgb(140, 220, 254)" }}>Sending data...</Text>}
-                        </View>
-                        <View style={{ marginBottom: 15, flexDirection: "row", alignItems: "center", flexWrap: "wrap" }}>
-                            {transcription ? <>
-                                <Text style={{ color: "#d4d4c9", fontSize: 16 }}>{sendingStatus.completed}</Text>
-                                <Text style={{ color: "#878787", fontSize: 16 }}>{sendingStatus.remaining}</Text>
-                            </> :
-                                <Text style={{ color: "#d4d4c9" }}>{transcription || "Try to record something 🤗"}</Text>
-                            }
-                        </View>
-                        {isSending && <Text style={{ color: "#d4d4c9", marginBottom: 10 }}>Time period - {updatePeriod / 1000}s</Text>}
-                        {isSending &&
-                            <View style={{ flexDirection: "row", gap: 10 }}>
-                                <View style={{ flex: 1 }}>
-                                    <TouchableNativeFeedback onPress={() => handleSendSpeed(1000)} >
-                                        <View style={styles.stopBtn}>
-                                            <Icon name="plus" size={20} color="#d4d4c9" />
+                            {<View style={styles.transCriptionBox}>
+                                <View style={{ marginBottom: 5, flexDirection: "row", alignItems: "center", gap: 10 }}>
+                                    <Text style={{ color: "#fff", fontSize: 18 }}>{uploading ? "Transcripting..." : "Transcription"}</Text>
+                                    {isSending && <Text style={{ fontSize: 11, color: "rgb(140, 220, 254)" }}>Sending data...</Text>}
+                                </View>
+                                <View style={{ marginBottom: 15, flexDirection: "row", alignItems: "center", flexWrap: "wrap" }}>
+                                    {(isSending) ? <>
+                                        <Text style={{ color: "#d4d4c9", fontSize: 16 }}>{sendingStatus.completed}</Text>
+                                        <Text style={{ color: "#878787", fontSize: 16 }}>{sendingStatus.remaining}</Text>
+                                    </> :
+                                        <View style={{ width: "100%", flexDirection: "row", gap: 5, }}>
+                                            <TextInput style={styles.textInput} placeholder='Enter your text or record audio 🤗' onChangeText={e => setTextInput(e)} value={textInput} placeholderTextColor={"#d4d4c9"} />
+                                            <View>
+                                                <TouchableNativeFeedback onPress={handleTextSend}>
+                                                    <View style={styles.sendBtn}>
+                                                        <Icon name="arrow-up" size={15} color="#fff" />
+                                                    </View>
+                                                </TouchableNativeFeedback>
+                                            </View>
                                         </View>
-                                    </TouchableNativeFeedback>
+                                    }
                                 </View>
 
-                                <View style={{ flex: 3 }}>
-                                    <TouchableNativeFeedback onPress={handleStopSending} >
-                                        <View style={{ ...styles.stopBtn, width: "100%" }}>
-                                            <Text style={{ color: "#d4d4c9" }}>Stop sending</Text>
+                                {isSending && <Text style={{ color: "#d4d4c9", marginBottom: 10 }}>Time period - {updatePeriod / 1000}s</Text>}
+                                {isSending &&
+                                    <View style={{ flexDirection: "row", gap: 10 }}>
+                                        <View style={{ flex: 1 }}>
+                                            <TouchableNativeFeedback onPress={() => handleSendSpeed(1000)} >
+                                                <View style={styles.stopBtn}>
+                                                    <Icon name="plus" size={20} color="#d4d4c9" />
+                                                </View>
+                                            </TouchableNativeFeedback>
                                         </View>
-                                    </TouchableNativeFeedback>
-                                </View>
-                                <View style={{ flex: 1 }}>
-                                    <TouchableNativeFeedback onPress={() => handleSendSpeed(-1000)} >
-                                        <View style={styles.stopBtn}>
-                                            <Icon name="minus" size={20} color="#d4d4c9" />
+
+                                        <View style={{ flex: 3 }}>
+                                            <TouchableNativeFeedback onPress={handleStopSending} >
+                                                <View style={{ ...styles.stopBtn, width: "100%" }}>
+                                                    <Text style={{ color: "#d4d4c9" }}>Stop sending</Text>
+                                                </View>
+                                            </TouchableNativeFeedback>
                                         </View>
-                                    </TouchableNativeFeedback>
-                                </View>
-                            </View>
-                        }
-                    </View>}
+                                        <View style={{ flex: 1 }}>
+                                            <TouchableNativeFeedback onPress={() => handleSendSpeed(-1000)} >
+                                                <View style={styles.stopBtn}>
+                                                    <Icon name="minus" size={20} color="#d4d4c9" />
+                                                </View>
+                                            </TouchableNativeFeedback>
+                                        </View>
+                                    </View>
+                                }
+                            </View>}
+                        </View>
+                    </ScrollView>
                 </View>
                 <View>
                     <TouchableNativeFeedback disabled={reconnect} onPress={handleReconnect}>
@@ -446,5 +477,25 @@ const styles = StyleSheet.create({
         borderRadius: 30,
         justifyContent: 'center',
         flexDirection: 'row',
+    },
+    textInput: {
+        height: 40,
+        width: "100%",
+        backgroundColor: "#636363",
+        borderColor: "transparent",
+        borderWidth: 1,
+        paddingHorizontal: 10,
+        borderRadius: 10,
+        color: "#f0f0f0",
+        flex: 1,
+
+    },
+    sendBtn: {
+        backgroundColor: "#11a5f6",
+        height: 40,
+        width: 40,
+        borderRadius: 10,
+        alignItems: "center",
+        justifyContent: "center"
     }
 })
