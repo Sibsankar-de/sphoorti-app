@@ -1,12 +1,19 @@
+
+<div align="center">
+
 # Sphoorti — Speech-to-Braille Assistive System
 
-> **Empowering the visually impaired through real-time speech-to-braille conversion.**
+> Empowering the visually impaired through real-time speech-to-braille conversion.
 
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![React Native](https://img.shields.io/badge/React%20Native-0.76-blue)](https://reactnative.dev/)
-[![Expo](https://img.shields.io/badge/Expo-52-black)](https://expo.dev/)
-[![BLE](https://img.shields.io/badge/BLE-PLX-orange)](https://github.com/dotintent/react-native-ble-plx)
-[![AssemblyAI](https://img.shields.io/badge/Speech%20Recognition-AssemblyAI-blueviolet)](https://www.assemblyai.com/)
+<br>
+
+<img src="https://img.shields.io/badge/License-MIT-green.svg">
+<img src="https://img.shields.io/badge/React%20Native-0.76-blue">
+<img src="https://img.shields.io/badge/Expo-52-black">
+<img src="https://img.shields.io/badge/BLE-PLX-orange">
+<img src="https://img.shields.io/badge/Speech%20Recognition-AssemblyAI-blueviolet">
+
+</div>
 
 ---
 
