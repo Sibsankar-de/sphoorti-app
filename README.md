@@ -524,8 +524,8 @@ It serves as a strong academic and research-oriented engineering prototype.
 
 | Role                 | Contributor        |
 | -------------------- | ------------------ |
-| Hardware Development | Subhajit Halder    |
 | Software Development | Sibshankar De      |
+| Hardware Development | Subhajit Halder    |
 | Product Design       | Rounak Mohata      |
 | Product Design       | Priyam Chakraborty |
 | Product Design       | Gautam Maity       |
