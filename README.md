@@ -5,7 +5,6 @@
 
 Empowering the visually impaired through real-time speech-to-braille conversion.
 
-<img src="https://img.shields.io/badge/License-MIT-green.svg">
 <img src="https://img.shields.io/badge/React%20Native-0.76-blue">
 <img src="https://img.shields.io/badge/Expo-52-black">
 <img src="https://img.shields.io/badge/BLE-PLX-orange">
